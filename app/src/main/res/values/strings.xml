@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">ContactsDetails</string>
+    <string name="title_activity_authenticator">AuthenticatorActivity</string>
+    <string name="title_activity_viewing">ViewingActivity</string>
+    <string name="account_exists">Account Already Exists</string>
+    <string name="welcome">Welcome</string>
+</resources>
