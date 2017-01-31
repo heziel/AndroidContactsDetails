@@ -24,7 +24,7 @@ This app doesn’t fetch any data from server but it's required to implement the
 
 Here's a walkthrough of implemented user stories:
 
-<img src='http://i.imgur.com/2u9hX60.gif' title='Video Walkthrough' width='' alt='Video Walkthrough' />
+<img src='http://giphy.com/gifs/26gs8tWZZ1rqAt5Yc' title='Video Walkthrough' width='' alt='Video Walkthrough' />
 
 ## About
 
