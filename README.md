@@ -7,12 +7,15 @@ This android application runs in background as soon as launched and synchronize.
 # The App Have Three Components: 
 
 ** Contacts Provider **
+
 Contacts provider is the standard access provider to the device’s data about people. 
 
 ** Authentication Service **
+
 The authentication service is used to create an account for our app on the device. 
 
 ** Sync Service **
+
 The sync adapter is used to synchronize data between the server and the local database. 
 This app doesn’t fetch any data from server but it's required to implement the sync adapter. 
 
@@ -25,10 +28,13 @@ Here's a walkthrough of implemented user stories:
 
 ## About
 
-* App tested on *
-5.0.2 API 21
-5.1.1 API 22
-6.0.1 API 23
+### App tested on
+
+[v] 5.0.2 API 21
+
+[v] 5.1.1 API 22
+
+[v] 6.0.1 API 23
 
 ## License
 
