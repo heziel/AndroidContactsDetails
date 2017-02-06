@@ -22,10 +22,10 @@ public class ContactsManager {
     public static void addContact(Context context, MyContact contact) {
 
         ContentResolver resolver = context.getContentResolver();
-        boolean mHasAccount = isAlreadyRegistered(resolver, contact.Id);
+        boolean mHasAccount = isAlreadyRegistered(resolver, contact.getId());
 
         if (mHasAccount) {
-            Log.i("ContactsManager", context.getString(R.string.account_exists));
+            Log.i("ContactsManager", context.getString(R.string.account_exists) + contact.getName());
         } else {
 
             ArrayList<ContentProviderOperation> ops = new ArrayList<ContentProviderOperation>();
@@ -44,7 +44,7 @@ public class ContactsManager {
                     .newInsert(addCallerIsSyncAdapterParameter(ContactsContract.Data.CONTENT_URI, true))
                     .withValueBackReference(ContactsContract.Data.RAW_CONTACT_ID, 0)
                     .withValue(ContactsContract.Data.MIMETYPE, ContactsContract.CommonDataKinds.Phone.CONTENT_ITEM_TYPE)
-                    .withValue(ContactsContract.CommonDataKinds.Phone.NUMBER, contact.number)
+                    .withValue(ContactsContract.CommonDataKinds.Phone.NUMBER, contact.getNumber())
                     .build());
 
             // Insert contact name
@@ -53,7 +53,7 @@ public class ContactsManager {
                     .withValueBackReference(ContactsContract.Data.RAW_CONTACT_ID, 0)
                     .withValue(ContactsContract.Data.MIMETYPE,
                             ContactsContract.CommonDataKinds.StructuredName.CONTENT_ITEM_TYPE)
-                    .withValue(ContactsContract.CommonDataKinds.StructuredName.DISPLAY_NAME, contact.name)
+                    .withValue(ContactsContract.CommonDataKinds.StructuredName.DISPLAY_NAME, contact.getName())
                     .build());
 
             // Insert mime-type data
@@ -79,44 +79,47 @@ public class ContactsManager {
      * Check if contact is already registered with app
      *
      * @param resolver
-     * @param id
+     * @param Ids
      * @return
      */
-    private static boolean isAlreadyRegistered(ContentResolver resolver, String id) {
+    private static boolean isAlreadyRegistered(ContentResolver resolver, List<String> Ids) {
 
         boolean isRegistered = false;
         List<String> str = new ArrayList<>();
 
-        //query raw contact id's from the contact id
-        Cursor c = resolver.query(ContactsContract.RawContacts.CONTENT_URI, new String[]{ContactsContract.RawContacts._ID},
-                ContactsContract.RawContacts.CONTACT_ID + "=?",
-                new String[]{id}, null);
+        // For Each Id find if ContactDetails is Exist.
+        for (String id : Ids) {
 
-        //fetch all raw contact id's and save them in a list of string
-        if (c != null && c.moveToFirst()) {
-            do {
-                str.add(c.getString(c.getColumnIndexOrThrow(ContactsContract.RawContacts._ID)));
-            } while (c.moveToNext());
-            c.close();
-        }
+            //query raw contact id's from the contact id
+            Cursor c = resolver.query(ContactsContract.RawContacts.CONTENT_URI, new String[]{ContactsContract.RawContacts._ID},
+                    ContactsContract.RawContacts.CONTACT_ID + "=?",
+                    new String[]{id}, null);
 
-        //query account types and check the account type for each raw contact id
-        for (int i = 0; i < str.size(); i++) {
-            Cursor c1 = resolver.query(ContactsContract.RawContacts.CONTENT_URI, new String[]{ContactsContract.RawContacts.ACCOUNT_TYPE},
-                    ContactsContract.RawContacts._ID + "=?",
-                    new String[]{str.get(i)}, null);
+            //fetch all raw contact id's and save them in a list of string
+            if (c != null && c.moveToFirst()) {
+                do {
+                    str.add(c.getString(c.getColumnIndexOrThrow(ContactsContract.RawContacts._ID)));
+                } while (c.moveToNext());
+                c.close();
+            }
 
-            if (c1 != null) {
-                c1.moveToFirst();
-                String accType = c1.getString(c1.getColumnIndexOrThrow(ContactsContract.RawContacts.ACCOUNT_TYPE));
-                if (accType != null && accType.equals("com.poc.example.contactsdetails")) {
-                    isRegistered = true;
-                    break;
+            //query account types and check the account type for each raw contact id
+            for (int i = 0; i < str.size(); i++) {
+                Cursor c1 = resolver.query(ContactsContract.RawContacts.CONTENT_URI, new String[]{ContactsContract.RawContacts.ACCOUNT_TYPE},
+                        ContactsContract.RawContacts._ID + "=?",
+                        new String[]{str.get(i)}, null);
+
+                if (c1 != null) {
+                    c1.moveToFirst();
+                    String accType = c1.getString(c1.getColumnIndexOrThrow(ContactsContract.RawContacts.ACCOUNT_TYPE));
+                    if (accType != null && accType.equals(Constants.ACCOUNT_TYPE)) {
+                        isRegistered = true;
+                        break;
+                    }
+                    c1.close();
                 }
-                c1.close();
             }
         }
-
         return isRegistered;
     }
 

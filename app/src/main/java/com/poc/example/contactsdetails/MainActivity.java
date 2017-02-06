@@ -16,6 +16,9 @@ import android.widget.ListView;
 import android.widget.Toast;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -24,6 +27,7 @@ public class MainActivity extends AppCompatActivity {
     private ArrayList<String> mNames = new ArrayList<>();
     private ArrayList<String> mIDs = new ArrayList<>();
     private ArrayList<String> mNumbers = new ArrayList<>();
+    private Map<String, List<String>> idsHash = new HashMap<>();
     // ListView Reference.
     private ListView lvContactsNames;
 
@@ -79,6 +83,7 @@ public class MainActivity extends AppCompatActivity {
      */
     private void getContactDataBefore() {
         int i = 0;
+        List<String> list = new ArrayList<>();
 
         Cursor c1 = getContentResolver()
                 .query(ContactsContract.Contacts.CONTENT_URI, null, null, null, null);
@@ -88,9 +93,7 @@ public class MainActivity extends AppCompatActivity {
             // add contact id's to the mIDs list
             do {
                 String id = c1.getString(c1.getColumnIndexOrThrow(ContactsContract.Contacts._ID));
-                mIDs.add(id);
                 String name = c1.getString(c1.getColumnIndexOrThrow(ContactsContract.Contacts.DISPLAY_NAME));
-                mNames.add(name);
 
                 // query all contact numbers corresponding to current id
                 Cursor c2 = getContentResolver()
@@ -100,16 +103,24 @@ public class MainActivity extends AppCompatActivity {
                                 new String[]{id}, null);
 
                 if (c2 != null && c2.moveToFirst()) {
+                    list = new ArrayList<>();
+
+                    if ( idsHash.containsKey(name)) {
+                        list = idsHash.get(name);
+                    }else{
+                        mIDs.add(id);
+                        mNames.add(name);
+                    }
+
+                    list.add(id);
+                    idsHash.put(name,list);
+
                     // add contact number's to the mNumbers list
                     //do{
                     mNumbers.add(c2.getString(c2
                             .getColumnIndexOrThrow(ContactsContract.CommonDataKinds.Phone.NUMBER)));
                     //}while (c2.moveToNext());
                     c2.close();
-                } else {
-                    int last = mIDs.size() - 1;
-                    mIDs.remove(last);
-                    mNames.remove(last);
                 }
 
                 i++;
@@ -134,7 +145,8 @@ public class MainActivity extends AppCompatActivity {
                     number = mNumbers.get(i);
                     name = mNames.get(i);
                     Log.d("CONTACTS", "Name=" + name + " Number =" + number);
-                    ContactsManager.addContact(MainActivity.this, new MyContact(id, number, name));
+                    ContactsManager.addContact(MainActivity.this,
+                            new MyContact(idsHash.get(name), number, name));
                 }
                 return null;
             }
