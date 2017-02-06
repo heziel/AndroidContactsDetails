@@ -12,6 +12,9 @@ import android.widget.TextView;
 public class ViewingActivity extends AppCompatActivity {
     private Context mContext;
     TextView tvName;
+    TextView tvNumber;
+    private String name = "";
+    private String number = "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -19,19 +22,22 @@ public class ViewingActivity extends AppCompatActivity {
         setContentView(R.layout.activity_viewing);
 
         mContext = getBaseContext();
-        tvName = (TextView) findViewById(R.id.tvName);
 
-        String name = getName();
+        tvName = (TextView) findViewById(R.id.tvName);
+        tvNumber = (TextView) findViewById(R.id.tvNumber);
+
+        getContactDetails();
 
         tvName.setText(name);
+        tvNumber.setText(number);
     }
 
-    private String getName() {
+    private void getContactDetails() {
         Intent intent = getIntent();
 
         Uri uri = intent.getData();
         String key = getKey(uri);
-        return getContactNameFromAndroidKey(key);
+        getContactNameFromAndroidKey(key);
     }
 
     /*
@@ -50,14 +56,17 @@ public class ViewingActivity extends AppCompatActivity {
     /*
     *   Get Contact Name From Android Key.
     */
-    private String getContactNameFromAndroidKey (String key)
+    private void getContactNameFromAndroidKey (String key)
     {
+        // GET Name
+
         // Run query
         Uri uri = Uri.parse (ContactsContract.Contacts.CONTENT_LOOKUP_URI + "/" + key);
 
         String[] projection = new String[] {
                 ContactsContract.Contacts._ID,
                 ContactsContract.Contacts.DISPLAY_NAME,
+
         };
 
         Cursor cursor = mContext.getContentResolver().query (
@@ -69,9 +78,21 @@ public class ViewingActivity extends AppCompatActivity {
 
         if (!cursor.moveToNext()) // move to first (and only) row.
             throw new IllegalStateException ("contact no longer exists for key");
-        String name = cursor.getString(1);
+        String id = cursor.getString(0);
+        name = cursor.getString(1);
+
         cursor.close();
 
-        return name;
+        // GET Number
+        cursor = getContentResolver().query(
+                ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+                null,
+                ContactsContract.CommonDataKinds.Phone.CONTACT_ID + " = "+ id,
+                null, null);
+        if (cursor.moveToFirst()) {
+            int colIdx = cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER);
+            number = cursor.getString(colIdx);
+        }
+        cursor.close();
     }
 }

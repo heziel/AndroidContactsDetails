@@ -11,16 +11,18 @@
     tools:context="com.poc.example.contactsdetails.ViewingActivity">
 
     <TextView
-        android:id="@+id/tvWelcome"
-        android:layout_width="match_parent"
-        android:layout_height="40dp"
-        android:text="@string/welcome"/>
-
-    <TextView
         android:id="@+id/tvName"
         android:layout_width="match_parent"
         android:layout_height="40dp"
-        android:layout_below="@id/tvWelcome"
+        android:textSize="30sp"
+        android:gravity="center_horizontal|center_vertical"
+        android:text=""/>
+
+    <TextView
+        android:id="@+id/tvNumber"
+        android:layout_width="match_parent"
+        android:layout_height="40dp"
+        android:layout_below="@id/tvName"
         android:textSize="30sp"
         android:gravity="center_horizontal|center_vertical"
         android:text=""/>
