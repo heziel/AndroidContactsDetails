@@ -27,7 +27,7 @@ public class ContactsManager {
         if (mHasAccount) {
             Log.i("ContactsManager", context.getString(R.string.account_exists) + contact.getName());
         } else {
-
+            Log.i("ContactsManager", "New Account, " + contact.getName() +   "    Number = " + contact.getNumber() );
             ArrayList<ContentProviderOperation> ops = new ArrayList<ContentProviderOperation>();
 
             // insert account name and account type

@@ -15,6 +15,8 @@ public class ViewingActivity extends AppCompatActivity {
     TextView tvNumber;
     private String name = "";
     private String number = "";
+    private  Cursor cursorName;
+    private Cursor cursorNumber;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,7 +47,7 @@ public class ViewingActivity extends AppCompatActivity {
     */
     private String getKey(Uri uriData){
 
-        Cursor c = this.managedQuery(uriData,null,null,null,null);
+        Cursor c = getContentResolver().query(uriData,null,null,null,null);
         c.moveToFirst();
         String lookupKey = c.getString(c.getColumnIndex(ContactsContract.Contacts.LOOKUP_KEY ));
         c.close();
@@ -69,30 +71,30 @@ public class ViewingActivity extends AppCompatActivity {
 
         };
 
-        Cursor cursor = mContext.getContentResolver().query (
+        cursorName = mContext.getContentResolver().query (
                 uri,
                 projection,
                 null,
                 null,
                 null);
 
-        if (!cursor.moveToNext()) // move to first (and only) row.
+        if (!cursorName.moveToNext()) // move to first (and only) row.
             throw new IllegalStateException ("contact no longer exists for key");
-        String id = cursor.getString(0);
-        name = cursor.getString(1);
+        String id = cursorName.getString(0);
+        name = cursorName.getString(1);
 
-        cursor.close();
+        cursorName.close();
 
         // GET Number
-        cursor = getContentResolver().query(
+        cursorNumber = getContentResolver().query(
                 ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
                 null,
                 ContactsContract.CommonDataKinds.Phone.CONTACT_ID + " = "+ id,
                 null, null);
-        if (cursor.moveToFirst()) {
-            int colIdx = cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER);
-            number = cursor.getString(colIdx);
+        if (cursorNumber.moveToFirst()) {
+            int colIdx = cursorNumber.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER);
+            number = cursorNumber.getString(colIdx);
         }
-        cursor.close();
+        cursorNumber.close();
     }
 }

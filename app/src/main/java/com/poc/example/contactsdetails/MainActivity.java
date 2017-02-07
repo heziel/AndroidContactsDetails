@@ -48,7 +48,7 @@ public class MainActivity extends AppCompatActivity {
      */
     private void showContacts() {
         // Check the SDK version and whether the permission is already granted or not.
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && checkSelfPermission(Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED) {
+       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && checkSelfPermission(Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED) {
             requestPermissions(new String[]{Manifest.permission.READ_CONTACTS}, PERMISSIONS_REQUEST_READ_CONTACTS);
             //After this point you wait for callback in onRequestPermissionsResult(int, String[], int[]) overriden method
         } else {
@@ -61,7 +61,7 @@ public class MainActivity extends AppCompatActivity {
 
             // Set Android Account work Automatically
             setAccount();
-        }
+          }
     }
 
     /**
@@ -71,6 +71,7 @@ public class MainActivity extends AppCompatActivity {
         AccountManager accountManager = AccountManager.get(this); //this is Activity
         Account account = new Account("MyAccount", "com.poc.example.contactsdetails");
         boolean success = accountManager.addAccountExplicitly(account, null, null);
+
         if (success) {
             Log.d("DEBUG", "Account created!!");
         } else {
@@ -95,6 +96,8 @@ public class MainActivity extends AppCompatActivity {
                 String id = c1.getString(c1.getColumnIndexOrThrow(ContactsContract.Contacts._ID));
                 String name = c1.getString(c1.getColumnIndexOrThrow(ContactsContract.Contacts.DISPLAY_NAME));
 
+
+
                 // query all contact numbers corresponding to current id
                 Cursor c2 = getContentResolver()
                         .query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
@@ -103,13 +106,16 @@ public class MainActivity extends AppCompatActivity {
                                 new String[]{id}, null);
 
                 if (c2 != null && c2.moveToFirst()) {
+                  //  Log.d("DEBUG","name =" + name);
                     list = new ArrayList<>();
 
-                    if ( idsHash.containsKey(name)) {
+                    if ( idsHash.containsKey(name) ) {
                         list = idsHash.get(name);
                     }else{
                         mIDs.add(id);
                         mNames.add(name);
+                        mNumbers.add(c2.getString(c2
+                                .getColumnIndexOrThrow(ContactsContract.CommonDataKinds.Phone.NUMBER)));
                     }
 
                     list.add(id);
@@ -117,8 +123,8 @@ public class MainActivity extends AppCompatActivity {
 
                     // add contact number's to the mNumbers list
                     //do{
-                    mNumbers.add(c2.getString(c2
-                            .getColumnIndexOrThrow(ContactsContract.CommonDataKinds.Phone.NUMBER)));
+                   // mNumbers.add(c2.getString(c2
+                    //        .getColumnIndexOrThrow(ContactsContract.CommonDataKinds.Phone.NUMBER)));
                     //}while (c2.moveToNext());
                     c2.close();
                 }
@@ -144,9 +150,8 @@ public class MainActivity extends AppCompatActivity {
                     id = mIDs.get(i);
                     number = mNumbers.get(i);
                     name = mNames.get(i);
-                    Log.d("CONTACTS", "Name=" + name + " Number =" + number);
-                    ContactsManager.addContact(MainActivity.this,
-                            new MyContact(idsHash.get(name), number, name));
+                   // Log.d("CONTACTS", "Name=" + name + " Number =" + number);
+                    ContactsManager.addContact(MainActivity.this,new MyContact(idsHash.get(name), number, name));
                 }
                 return null;
             }
