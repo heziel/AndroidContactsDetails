@@ -38,8 +38,13 @@ public class ViewingActivity extends AppCompatActivity {
         Intent intent = getIntent();
 
         Uri uri = intent.getData();
-        String key = getKey(uri);
-        getContactNameFromAndroidKey(key);
+        if ( uri != null) {
+            String key = getKey(uri);
+            getContactNameFromAndroidKey(key);
+        }else{
+            name = intent.getStringExtra("name");
+        }
+
     }
 
     /*

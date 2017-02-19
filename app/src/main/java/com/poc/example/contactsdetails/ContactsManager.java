@@ -27,7 +27,7 @@ public class ContactsManager {
         if (mHasAccount) {
             Log.i("ContactsManager", context.getString(R.string.account_exists) + contact.getName());
         } else {
-            Log.i("ContactsManager", "New Account, " + contact.getName() +   "    Number = " + contact.getNumber() );
+            Log.i("ContactsManager", "New Account, " + contact.getName() + "    Number = " + contact.getNumber());
             ArrayList<ContentProviderOperation> ops = new ArrayList<ContentProviderOperation>();
 
             // insert account name and account type
@@ -83,43 +83,51 @@ public class ContactsManager {
      * @return
      */
     private static boolean isAlreadyRegistered(ContentResolver resolver, List<String> Ids) {
-
         boolean isRegistered = false;
         List<String> str = new ArrayList<>();
+        try {
+            // For Each Id find if ContactDetails is Exist.
+            for (String id : Ids) {
 
-        // For Each Id find if ContactDetails is Exist.
-        for (String id : Ids) {
+                //query raw contact id's from the contact id
+                Cursor c = resolver.query(ContactsContract.RawContacts.CONTENT_URI, new String[]{ContactsContract.RawContacts._ID},
+                        ContactsContract.RawContacts.CONTACT_ID + "=?",
+                        new String[]{id}, null);
 
-            //query raw contact id's from the contact id
-            Cursor c = resolver.query(ContactsContract.RawContacts.CONTENT_URI, new String[]{ContactsContract.RawContacts._ID},
-                    ContactsContract.RawContacts.CONTACT_ID + "=?",
-                    new String[]{id}, null);
+                //fetch all raw contact id's and save them in a list of string
+                if (c != null && c.moveToFirst()) {
+                    do {
+                        str.add(c.getString(c.getColumnIndexOrThrow(ContactsContract.RawContacts._ID)));
+                    } while (c.moveToNext());
+                    c.close();
+                } else {
+                    c.close();
+                }
 
-            //fetch all raw contact id's and save them in a list of string
-            if (c != null && c.moveToFirst()) {
-                do {
-                    str.add(c.getString(c.getColumnIndexOrThrow(ContactsContract.RawContacts._ID)));
-                } while (c.moveToNext());
-                c.close();
-            }
 
-            //query account types and check the account type for each raw contact id
-            for (int i = 0; i < str.size(); i++) {
-                Cursor c1 = resolver.query(ContactsContract.RawContacts.CONTENT_URI, new String[]{ContactsContract.RawContacts.ACCOUNT_TYPE},
-                        ContactsContract.RawContacts._ID + "=?",
-                        new String[]{str.get(i)}, null);
+                //query account types and check the account type for each raw contact id
+                for (int i = 0; i < str.size(); i++) {
+                    Cursor c1 = resolver.query(ContactsContract.RawContacts.CONTENT_URI, new String[]{ContactsContract.RawContacts.ACCOUNT_TYPE},
+                            ContactsContract.RawContacts._ID + "=?",
+                            new String[]{str.get(i)}, null);
 
-                if (c1 != null) {
-                    c1.moveToFirst();
-                    String accType = c1.getString(c1.getColumnIndexOrThrow(ContactsContract.RawContacts.ACCOUNT_TYPE));
-                    if (accType != null && accType.equals(Constants.ACCOUNT_TYPE)) {
-                        isRegistered = true;
-                        break;
+                    if (c1 != null) {
+                        c1.moveToFirst();
+                        String accType = c1.getString(c1.getColumnIndexOrThrow(ContactsContract.RawContacts.ACCOUNT_TYPE));
+                        if (accType != null && accType.equals(Constants.ACCOUNT_TYPE)) {
+                            isRegistered = true;
+                            break;
+                        }
+                        c1.close();
+                    } else {
+                        c1.close();
                     }
-                    c1.close();
                 }
             }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
+
         return isRegistered;
     }
 

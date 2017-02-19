@@ -40,6 +40,9 @@
                 android:resource="@xml/contacts" />
         </service>
 
+        <service android:name=".ContactService"
+            android:exported="false"/>
+
         <activity
             android:name=".MainActivity"
             android:label="@string/app_name">

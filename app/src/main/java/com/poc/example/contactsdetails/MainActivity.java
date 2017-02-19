@@ -3,18 +3,23 @@ package com.poc.example.contactsdetails;
 import android.Manifest;
 import android.accounts.Account;
 import android.accounts.AccountManager;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.os.AsyncTask;
 import android.os.Build;
+import android.os.Parcelable;
 import android.provider.ContactsContract;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.Toast;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -39,6 +44,7 @@ public class MainActivity extends AppCompatActivity {
         // Find the list view
         this.lvContactsNames = (ListView) findViewById(R.id.lvContactsNames);
 
+
         // Read and show the contacts
         showContacts();
     }
@@ -48,20 +54,29 @@ public class MainActivity extends AppCompatActivity {
      */
     private void showContacts() {
         // Check the SDK version and whether the permission is already granted or not.
-       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && checkSelfPermission(Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && checkSelfPermission(Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED) {
             requestPermissions(new String[]{Manifest.permission.READ_CONTACTS}, PERMISSIONS_REQUEST_READ_CONTACTS);
             //After this point you wait for callback in onRequestPermissionsResult(int, String[], int[]) overriden method
         } else {
             // Android version is lesser than 6.0 or the permission is already granted.
             getContactDataBefore();
-            applyChanges();
 
-            ArrayAdapter<String> adapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, mNames);
+            final ArrayAdapter<String> adapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, mNames);
             lvContactsNames.setAdapter(adapter);
+            lvContactsNames.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                @Override
+                public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                    Intent intent = new Intent(getBaseContext(),ViewingActivity.class);
+                    intent.putExtra("name", (String) parent.getItemAtPosition(position));
+                    startActivity(intent);
+                }
+            });
+
+            applyChanges();
 
             // Set Android Account work Automatically
             setAccount();
-          }
+        }
     }
 
     /**
@@ -96,8 +111,6 @@ public class MainActivity extends AppCompatActivity {
                 String id = c1.getString(c1.getColumnIndexOrThrow(ContactsContract.Contacts._ID));
                 String name = c1.getString(c1.getColumnIndexOrThrow(ContactsContract.Contacts.DISPLAY_NAME));
 
-
-
                 // query all contact numbers corresponding to current id
                 Cursor c2 = getContentResolver()
                         .query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
@@ -106,12 +119,12 @@ public class MainActivity extends AppCompatActivity {
                                 new String[]{id}, null);
 
                 if (c2 != null && c2.moveToFirst()) {
-                  //  Log.d("DEBUG","name =" + name);
+                    //  Log.d("DEBUG","name =" + name);
                     list = new ArrayList<>();
 
-                    if ( idsHash.containsKey(name) ) {
+                    if (idsHash.containsKey(name)) {
                         list = idsHash.get(name);
-                    }else{
+                    } else {
                         mIDs.add(id);
                         mNames.add(name);
                         mNumbers.add(c2.getString(c2
@@ -119,13 +132,10 @@ public class MainActivity extends AppCompatActivity {
                     }
 
                     list.add(id);
-                    idsHash.put(name,list);
+                    idsHash.put(name, list);
 
-                    // add contact number's to the mNumbers list
-                    //do{
-                   // mNumbers.add(c2.getString(c2
-                    //        .getColumnIndexOrThrow(ContactsContract.CommonDataKinds.Phone.NUMBER)));
-                    //}while (c2.moveToNext());
+                    c2.close();
+                } else {
                     c2.close();
                 }
 
@@ -141,25 +151,13 @@ public class MainActivity extends AppCompatActivity {
      */
     private void applyChanges() {
 
-        new AsyncTask<String, String, String>() {
+        Intent cIntent = new Intent(this, ContactService.class);
+        cIntent.putExtra("ids",mIDs);
+        cIntent.putExtra("numbers",mNumbers);
+        cIntent.putExtra("names",mNames);
+        cIntent.putExtra("hash", (Serializable) idsHash);
+        startService(cIntent);
 
-            @Override
-            protected String doInBackground(String... params) {
-                String name, number, id;
-                for (int i = 0; i < mIDs.size(); i++) {
-                    id = mIDs.get(i);
-                    number = mNumbers.get(i);
-                    name = mNames.get(i);
-                   // Log.d("CONTACTS", "Name=" + name + " Number =" + number);
-                    ContactsManager.addContact(MainActivity.this,new MyContact(idsHash.get(name), number, name));
-                }
-                return null;
-            }
-
-            @Override
-            protected void onPostExecute(String s) {
-            }
-        }.execute();
     }
 
     /**
