@@ -5,11 +5,9 @@ import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.database.Cursor;
-import android.os.AsyncTask;
 import android.os.Build;
-import android.os.Parcelable;
-import android.provider.ContactsContract;
+import android.os.Handler;
+import android.support.v4.os.ResultReceiver;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -19,22 +17,15 @@ import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.Toast;
 
-import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 public class MainActivity extends AppCompatActivity {
 
     // Request code for READ_CONTACTS. It can be any number > 0.
     private static final int PERMISSIONS_REQUEST_READ_CONTACTS = 100;
-    private ArrayList<String> mNames = new ArrayList<>();
-    private ArrayList<String> mIDs = new ArrayList<>();
-    private ArrayList<String> mNumbers = new ArrayList<>();
-    private Map<String, List<String>> idsHash = new HashMap<>();
     // ListView Reference.
     private ListView lvContactsNames;
+    ContactsResultReceiver resultReceiver;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -43,7 +34,6 @@ public class MainActivity extends AppCompatActivity {
 
         // Find the list view
         this.lvContactsNames = (ListView) findViewById(R.id.lvContactsNames);
-
 
         // Read and show the contacts
         showContacts();
@@ -58,20 +48,6 @@ public class MainActivity extends AppCompatActivity {
             requestPermissions(new String[]{Manifest.permission.READ_CONTACTS}, PERMISSIONS_REQUEST_READ_CONTACTS);
             //After this point you wait for callback in onRequestPermissionsResult(int, String[], int[]) overriden method
         } else {
-            // Android version is lesser than 6.0 or the permission is already granted.
-            getContactDataBefore();
-
-            final ArrayAdapter<String> adapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, mNames);
-            lvContactsNames.setAdapter(adapter);
-            lvContactsNames.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-                @Override
-                public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                    Intent intent = new Intent(getBaseContext(),ViewingActivity.class);
-                    intent.putExtra("name", (String) parent.getItemAtPosition(position));
-                    startActivity(intent);
-                }
-            });
-
             applyChanges();
 
             // Set Android Account work Automatically
@@ -95,69 +71,14 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * Method to fetch contact's from device
-     */
-    private void getContactDataBefore() {
-        int i = 0;
-        List<String> list = new ArrayList<>();
-
-        Cursor c1 = getContentResolver()
-                .query(ContactsContract.Contacts.CONTENT_URI, null, null, null, null);
-
-        if ((c1 != null) && c1.moveToFirst()) {
-
-            // add contact id's to the mIDs list
-            do {
-                String id = c1.getString(c1.getColumnIndexOrThrow(ContactsContract.Contacts._ID));
-                String name = c1.getString(c1.getColumnIndexOrThrow(ContactsContract.Contacts.DISPLAY_NAME));
-
-                // query all contact numbers corresponding to current id
-                Cursor c2 = getContentResolver()
-                        .query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
-                                new String[]{ContactsContract.CommonDataKinds.Phone.NUMBER},
-                                ContactsContract.CommonDataKinds.Phone.CONTACT_ID + "=?",
-                                new String[]{id}, null);
-
-                if (c2 != null && c2.moveToFirst()) {
-                    //  Log.d("DEBUG","name =" + name);
-                    list = new ArrayList<>();
-
-                    if (idsHash.containsKey(name)) {
-                        list = idsHash.get(name);
-                    } else {
-                        mIDs.add(id);
-                        mNames.add(name);
-                        mNumbers.add(c2.getString(c2
-                                .getColumnIndexOrThrow(ContactsContract.CommonDataKinds.Phone.NUMBER)));
-                    }
-
-                    list.add(id);
-                    idsHash.put(name, list);
-
-                    c2.close();
-                } else {
-                    c2.close();
-                }
-
-                i++;
-            } while (c1.moveToNext() && i < c1.getCount());
-
-            c1.close();
-        }
-    }
-
-    /**
      * Apply changes to phone's contact list
      */
     private void applyChanges() {
+        resultReceiver = new ContactsResultReceiver(new Handler());
 
         Intent cIntent = new Intent(this, ContactService.class);
-        cIntent.putExtra("ids",mIDs);
-        cIntent.putExtra("numbers",mNumbers);
-        cIntent.putExtra("names",mNames);
-        cIntent.putExtra("hash", (Serializable) idsHash);
+        cIntent.putExtra("receiver", resultReceiver);
         startService(cIntent);
-
     }
 
     /**
@@ -173,6 +94,50 @@ public class MainActivity extends AppCompatActivity {
             } else {
                 Toast.makeText(this, "Until you grant the permission, we can't display the names", Toast.LENGTH_SHORT).show();
             }
+        }
+    }
+
+
+    private class ContactsResultReceiver extends ResultReceiver {
+
+        public static final int ERROR = 0;
+        public static final int SUCCESS = 1;
+
+        /**
+         * Create a new ResultReceive to receive results.  Your
+         * {@link #onReceiveResult} method will be called from the thread running
+         * <var>handler</var> if given, or from an arbitrary thread if null.
+         *
+         * @param handler
+         */
+        public ContactsResultReceiver(Handler handler) {
+            super(handler);
+        }
+
+        @Override
+        protected void onReceiveResult(int resultCode, Bundle resultData) {
+            ArrayList<String> mNames = new ArrayList<>();
+            mNames = resultData.getStringArrayList("names");
+
+            switch (resultCode) {
+                case SUCCESS:
+                    final ArrayAdapter<String> adapter = new ArrayAdapter<String>(getApplication(),
+                            android.R.layout.simple_list_item_1, mNames);
+                    lvContactsNames.setAdapter(adapter);
+                    lvContactsNames.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                        @Override
+                        public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                            Intent intent = new Intent(getBaseContext(), ViewingActivity.class);
+                            intent.putExtra("name", (String) parent.getItemAtPosition(position));
+                            startActivity(intent);
+                        }
+                    });
+                    break;
+                case ERROR:
+                    Toast.makeText(getApplication(), "Contact List Is Empty", Toast.LENGTH_SHORT).show();
+
+            }
+            super.onReceiveResult(resultCode, resultData);
         }
     }
 }
